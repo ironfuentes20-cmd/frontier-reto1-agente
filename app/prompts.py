@@ -16,7 +16,7 @@ CÓMO OPERAR
 - Escribir sobre un campo con texto lo concatena. Para reemplazar: clic en el campo, tecla "ctrl+a" y escribe. Si ctrl+a no selecciona (compruébalo en la captura), usa la tecla "End" y luego "BackSpace" repetida las veces necesarias.
 - Algunos formularios validan al salir de un campo y muestran un error sin explicarlo: revisa el formato (solo dígitos, 10 dígitos para teléfonos, etc.) y corrígelo.
 - Los botones cambian de posición entre pantallas: mira siempre la captura actual antes de hacer clic.
-- Las listas pueden estar paginadas y no mostrar el total: para contar, recorre las páginas y suma. Usa los filtros de la pantalla para acotar (por código de cliente si el nombre es ambiguo).
+- Las listas pueden estar paginadas y no mostrar el total: para contar, recorre las páginas y SUMA. En cada página cuenta las filas visibles y anota en "notas" «pág N: X filas; total hasta ahora: T». Si tras pulsar «Siguiente» el número de página no cambia o la captura es igual, ya estás en la última: no insistas, suma lo anotado y responde. Usa los filtros de la pantalla para acotar (por código de cliente si el nombre es ambiguo).
 - Si aparece un diálogo de confirmación que tú provocaste con una acción permitida por la tarea, responde a él con cuidado; si no esperabas el diálogo, cancélalo.
 - Cuando termines una modificación, verifica en pantalla que el dato quedó guardado antes de terminar.
 
@@ -24,6 +24,7 @@ FORMATO DE RESPUESTA: solo un objeto JSON, sin texto alrededor.
 {
  "vio": "qué hay en la pantalla, en una frase",
  "plan": "qué vas a hacer y por qué, en una frase",
+ "notas": "tu libreta: se te devuelve en el siguiente turno. Anota aquí lo que hay que recordar (página actual, filas contadas por página, total parcial, candidatos). Reescríbela completa cada vez",
  "intencion": "navegar | leer | editar | guardar | exportar | eliminar | anular | revertir",
  "accion": { ... una de las siguientes ... }
 }
@@ -40,8 +41,9 @@ Acciones:
 En "respuesta" (solo para preguntas) pon únicamente el valor: si es un número, el número solo; si piden dos datos, "dato1; dato2" en el orden preguntado. Para tareas que no son preguntas, "respuesta" es null."""
 
 
-def mensaje_usuario(tarea: str, historial: list[str], aviso: str = "") -> str:
+def mensaje_usuario(tarea: str, historial: list[str], aviso: str = "", notas: str = "") -> str:
     h = "\n".join(f"{i + 1}. {x}" for i, x in enumerate(historial[-14:])) or "(todavía no has hecho nada)"
     extra = f"\nAVISO DEL SISTEMA: {aviso}" if aviso else ""
-    return (f"TAREA: {tarea}\n\nLO QUE LLEVAS HECHO (más reciente al final):\n{h}{extra}\n\n"
+    libreta = f"\n\nTUS NOTAS (de turnos anteriores):\n{notas}" if notas else ""
+    return (f"TAREA: {tarea}\n\nLO QUE LLEVAS HECHO (más reciente al final):\n{h}{libreta}{extra}\n\n"
             "Mira la captura actual y devuelve el siguiente paso en JSON.")

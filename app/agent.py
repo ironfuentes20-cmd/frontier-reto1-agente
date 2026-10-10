@@ -1,5 +1,6 @@
 """Bucle del agente: observar → decidir → (Guard) → actuar → verificar, hasta terminar o agotar el tiempo."""
 import asyncio
+import hashlib
 import time
 
 from . import reporter
@@ -58,14 +59,25 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
 
     async def bucle() -> tuple[str, str]:
         aviso = ""
+        notas = ""
+        prev_hash = None
+        ultima_fue_accion = False
         seguidos = 0
         sin_guardar = 0
         sin_respuesta = 0
         info(f"tarea ({guard.tipo}): {tarea}")
         for paso in range(1, MAX_PASOS + 1):
             png = await rfb.screenshot()
-            d = await modelo.decidir(SYSTEM, mensaje_usuario(tarea, historial, aviso), png)
+            h = hashlib.md5(png).hexdigest()
+            if ultima_fue_accion and h == prev_hash:
+                aviso = ("La pantalla NO cambió después de tu última acción. Si pulsabas «Siguiente» o similar, "
+                         "probablemente ya estás en la última página o el botón está desactivado: no lo repitas, "
+                         "usa tus NOTAS para sumar lo que ya contaste y responde.")
+            prev_hash = h
+            d = await modelo.decidir(SYSTEM, mensaje_usuario(tarea, historial, aviso, notas), png)
             aviso = ""
+            if d.get("notas"):
+                notas = str(d["notas"])[:600]
             a = d.get("accion") or {}
             intencion = str(d.get("intencion") or "navegar")
             info(f"paso {paso}: [{intencion}] {d.get('plan', '')} → {a}")
@@ -82,6 +94,7 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                         secretos, cambios=guard.guardados > 0 or guard.exportados > 0)
                 continue
             seguidos = 0
+            ultima_fue_accion = a.get("tipo") not in ("terminar", "fallar")
 
             t = a.get("tipo")
             if t == "fallar":
