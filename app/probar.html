@@ -15,6 +15,8 @@ small{color:#888}
 <label>Contraseña del escritorio</label><input id="pw" type="password" autocomplete="off">
 <label>Tarea</label><textarea id="tarea" rows="3">¿Cuántos clientes hay registrados?</textarea>
 <button id="go">Lanzar tarea</button>
+<button id="rs" style="background:#5cc8ff">Reiniciar escritorio</button>
+<label>Token del escritorio (solo para reiniciar)</label><input id="dtok" type="password" autocomplete="off">
 <label>Resultado</label><pre id="out">—</pre>
 <script>
 const $=i=>document.getElementById(i);
@@ -35,5 +37,14 @@ $("go").onclick=async()=>{
     if(g.estado==="en_curso"){$("out").textContent="Trabajando… "+s+" s";setTimeout(tick,2000)}
     else $("out").textContent=g.estado.toUpperCase()+" ("+s+" s)\n\n"+g.resumen;
   };tick();
+};
+$("rs").onclick=async()=>{
+  const u=$("url").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
+  const tk=$("tok").value.trim();
+  if(!u||!tk||!$("dtok").value.trim()){$("out").textContent="Para reiniciar llena token del equipo, dirección y token del escritorio.";return}
+  $("out").textContent="Reiniciando…";
+  const r=await fetch("/probar/reset",{method:"POST",headers:{"Authorization":"Bearer "+tk,"Content-Type":"application/json"},body:JSON.stringify({escritorio:u,token:$("dtok").value.trim()})});
+  const j=await r.json().catch(()=>({}));
+  $("out").textContent=r.ok?("Respuesta del escritorio: "+j.status+(j.status===200?" (reiniciado)":"")):"Error "+r.status;
 };
 </script></body></html>

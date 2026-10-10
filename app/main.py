@@ -28,6 +28,11 @@ class Escritorio(BaseModel):
     password: str
 
 
+class Reinicio(BaseModel):
+    escritorio: str   # host del escritorio, sin https://
+    token: str        # token personal del escritorio
+
+
 class NuevaTarea(BaseModel):
     tarea: str
     escritorio: Escritorio
@@ -77,3 +82,15 @@ async def estado_tarea(task_id: str):
     if rec is None:
         raise HTTPException(status_code=404, detail="tarea desconocida")
     return {"estado": rec["estado"], "resumen": rec["resumen"]}
+
+
+@app.post("/probar/reset", dependencies=[Depends(autorizar)])
+async def reiniciar_escritorio(r: Reinicio):
+    """Ayuda de pruebas: pide al escritorio que vuelva a sus datos iniciales."""
+    import httpx
+    host = r.escritorio.replace("https://", "").replace("http://", "").split("/")[0]
+    if not host.endswith(".up.railway.app"):
+        raise HTTPException(status_code=400, detail="escritorio no permitido")
+    async with httpx.AsyncClient(timeout=60) as c:
+        resp = await c.post(f"https://{host}/__reset", headers={"Authorization": f"Bearer {r.token}"})
+    return {"status": resp.status_code}
