@@ -57,6 +57,10 @@ class RFBClient:
         self.mx = 0
         self.my = 0
         self.closed = False
+        self._pump_task = None
+        self._pump_error = None
+        self._last_update = 0.0
+        self._updates = 0
 
     # ---- bajo nivel -------------------------------------------------
     async def _read(self, n: int) -> bytes:
@@ -85,6 +89,19 @@ class RFBClient:
                 open_timeout=timeout, compression=None,
             )
         await asyncio.wait_for(self._handshake(), timeout)
+        self._pump_task = asyncio.create_task(self._pump())
+
+    async def _pump(self) -> None:
+        """Único lector del socket: mantiene el framebuffer al día con todo lo que el escritorio envíe."""
+        try:
+            while True:
+                if await self._read_message() == "update":
+                    self._last_update = asyncio.get_running_loop().time()
+                    self._updates += 1
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            self._pump_error = e
 
     async def _handshake(self) -> None:
         server_ver = await self._read(12)
@@ -127,6 +144,8 @@ class RFBClient:
     async def close(self) -> None:
         self.closed = True
         try:
+            if self._pump_task:
+                self._pump_task.cancel()
             if self.ws:
                 await self.ws.close()
         except Exception:
@@ -161,16 +180,23 @@ class RFBClient:
             raise RFBError(f"mensaje del servidor desconocido: {t}")
         return "other"
 
-    async def screenshot(self, timeout: float = 15.0) -> bytes:
-        """Pide la pantalla completa y la devuelve como PNG."""
+    async def screenshot(self, timeout: float = 15.0, quiet: float = 0.35, max_wait: float = 2.5) -> bytes:
+        """Pide la pantalla completa, espera a que el escritorio termine de repintar y la devuelve como PNG."""
+        loop = asyncio.get_running_loop()
+        antes = self._updates
         await self._send(struct.pack(">BBHHHH", 3, 0, 0, 0, self.width, self.height))
-
-        async def _wait():
-            while True:
-                if await self._read_message() == "update":
-                    return
-
-        await asyncio.wait_for(_wait(), timeout)
+        t0 = loop.time()
+        while self._updates == antes:  # al menos una actualización posterior a la petición
+            if self._pump_error:
+                raise self._pump_error
+            if loop.time() - t0 > timeout:
+                raise asyncio.TimeoutError("el escritorio no envió la pantalla")
+            await asyncio.sleep(0.02)
+        # la pantalla puede seguir repintándose (texto recién escrito): esperar a que se calme
+        while loop.time() - self._last_update < quiet and loop.time() - t0 < max_wait:
+            await asyncio.sleep(0.05)
+        if self._pump_error:
+            raise self._pump_error
         rgb = self.fb[:, :, [2, 1, 0]]
         out = io.BytesIO()
         Image.fromarray(rgb, "RGB").save(out, "PNG")

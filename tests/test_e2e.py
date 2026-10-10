@@ -6,7 +6,7 @@ import sys
 import time
 
 os.environ["TEAM_TOKEN"] = "ftr_test_token_123"
-os.environ["TASK_DEADLINE_S"] = "6"
+os.environ["TASK_DEADLINE_S"] = "10"
 os.environ["OPENROUTER_API_KEY"] = "sk-or-secreta-9999"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(__file__))
