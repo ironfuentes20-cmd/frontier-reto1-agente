@@ -64,6 +64,7 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
         ultima_fue_accion = False
         ult_clic = None
         mismo_clic = 0
+        iguales = 0
         seguidos = 0
         sin_guardar = 0
         sin_respuesta = 0
@@ -77,10 +78,16 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 png = await rfb.screenshot()
                 h = hashlib.md5(png).hexdigest()
             if ultima_fue_accion and h == prev_hash:
-                aviso = ("La captura es idéntica a la anterior. Puede que tu última acción no hiciera efecto o que la pantalla "
-                         "aún no haya repintado. No saques conclusiones todavía: comprueba el indicador de la pantalla (por ejemplo "
-                         "«Página N») y si el botón que pulsaste sigue activo, reinténtalo UNA vez de otra forma. Solo asume que "
-                         "no hay más resultados si el botón «Siguiente» aparece desactivado (gris).")
+                iguales += 1
+                if iguales >= 2:
+                    aviso = ("La pantalla NO ha cambiado después de DOS acciones seguidas (ya esperé y volví a mirar). Ese botón no "
+                             "tiene más efecto: si era «Siguiente», la lista terminó y estás en la última página. No lo pulses más: "
+                             "suma lo que anotaste en tus NOTAS (incluidas las filas de esta última página) y responde con 'terminar'.")
+                else:
+                    aviso = ("La captura es idéntica a la anterior (ya esperé y volví a mirar). Comprueba el indicador «Página N» y "
+                             "reinténtalo UNA vez de otra forma; si sigue igual, probablemente no hay más resultados.")
+            else:
+                iguales = 0
             prev_hash = h
             d = await modelo.decidir(SYSTEM, mensaje_usuario(tarea, historial, aviso, notas), png)
             aviso = ""
