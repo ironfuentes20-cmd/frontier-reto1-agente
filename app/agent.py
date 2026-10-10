@@ -62,6 +62,8 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
         notas = ""
         prev_hash = None
         ultima_fue_accion = False
+        ult_clic = None
+        mismo_clic = 0
         seguidos = 0
         sin_guardar = 0
         sin_respuesta = 0
@@ -115,6 +117,30 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                     resp = None
                 return "terminada", reporter.terminada(str(a.get("resumen", "")), resp, secretos)
 
+            if a.get("tipo") in ("clic", "doble_clic"):
+                try:
+                    pt = (int(float(a["x"])), int(float(a["y"])))
+                except (KeyError, TypeError, ValueError):
+                    pt = None
+                if pt and ult_clic and abs(pt[0] - ult_clic[0]) <= 4 and abs(pt[1] - ult_clic[1]) <= 4:
+                    mismo_clic += 1
+                else:
+                    mismo_clic = 1 if pt else 0
+                ult_clic = pt
+                if mismo_clic > 3:
+                    seguidos += 1
+                    historial.append(f"BLOQUEADO: ya hiciste clic {mismo_clic - 1} veces en {pt} sin que nada avanzara")
+                    aviso = ("Ese mismo clic ya no sirve: llevas varios en el mismo punto. Si es un desplegable, enfócalo con un "
+                             "clic y elige la opción con el teclado (escribe su primera letra o usa la flecha Abajo y Enter). "
+                             "Si es un botón que no responde, busca otra ruta; si no la hay, usa 'fallar' explicando qué no respondió.")
+                    info(f"guard: clic repetido en {pt}")
+                    if seguidos >= 4:
+                        return "fallida", reporter.fallida(
+                            f"un elemento de la pantalla en {pt} no respondió a varios clics y no encontré otra ruta", None,
+                            secretos, cambios=guard.guardados > 0 or guard.exportados > 0)
+                    continue
+            else:
+                ult_clic, mismo_clic = None, 0
             try:
                 desc = await _actuar(rfb, a)
             except (ValueError, KeyError, TypeError, RFBError) as e:
