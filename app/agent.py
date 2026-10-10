@@ -81,8 +81,9 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 iguales += 1
                 aviso = ("La captura es idéntica a la anterior (la página pudo tardar en cargar o el clic no acertó). "
                          "NO concluyas que la lista terminó por esto: solo es la última página si el botón «Siguiente» se ve GRIS/"
-                         "desactivado o el indicador muestra «Página N de N». Si «Siguiente» se ve activo, púlsalo de nuevo "
-                         "(con el cursor justo sobre el botón). Nunca vuelvas a páginas anteriores: ya las contaste en tus NOTAS.")
+                         "desactivado o el indicador muestra «Página N de N». Si «Siguiente» se ve activo, vuelve a localizarlo en ESTA "
+                         "captura (pudo cambiar de sitio o de nombre; mira también la barra de la derecha) y púlsalo en su centro. "
+                         "Nunca vuelvas a páginas anteriores: ya las contaste en tus NOTAS.")
             else:
                 iguales = 0
             prev_hash = h
@@ -144,7 +145,9 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                              "(el botón está desactivado). Mira el indicador de página: si el número actual coincide con el total, "
                              "o no hay más páginas, suma lo anotado en tus NOTAS (incluida esta página) y responde con 'terminar'. "
                              "Si era un desplegable, enfócalo con un clic y elige con el teclado (primera letra o flecha Abajo y Enter). "
-                             "Si no es nada de eso y el botón no responde, busca otra ruta o usa 'fallar' explicando qué no respondió.")
+                             "Si no es nada de eso, la app pudo cambiar de tema: el botón que buscas puede estar en OTRO sitio (barra de "
+                             "acciones a la derecha) o con OTRO nombre; búscalo en la captura actual. Solo si de verdad no existe, "
+                             "usa 'fallar' explicando qué no respondió.")
                     info(f"guard: clic repetido en {pt}")
                     if seguidos >= 4:
                         return "fallida", reporter.fallida(
