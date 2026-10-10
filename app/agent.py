@@ -110,6 +110,10 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 continue
             guard.registrar(intencion)
             historial.append(f"[{intencion}] {desc}")
+            if len(historial) >= 3 and len({h for h in historial[-3:]}) == 1:
+                aviso = ("Repetiste la MISMA acción 3 veces y la pantalla no avanzó. Ese clic no funciona: "
+                         "prueba otro elemento, otro punto del botón, la tecla Enter o una ruta distinta del menú.")
+                historial.append("(repetición detectada: cambia de estrategia)")
             if intencion == "guardar":
                 historial.append("(guardado hecho: no repitas Guardar; verifica el resultado en pantalla)")
             await asyncio.sleep(1.0)  # la pantalla tarda hasta 1 s en repintar
