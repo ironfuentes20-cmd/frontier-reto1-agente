@@ -68,6 +68,7 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
         seguidos = 0
         sin_guardar = 0
         sin_respuesta = 0
+        solo_terminar = False
         info(f"tarea ({guard.tipo}): {tarea}")
         for paso in range(1, MAX_PASOS + 1):
             png = await rfb.screenshot()
@@ -96,6 +97,13 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
             intencion = str(d.get("intencion") or "navegar")
             info(f"paso {paso}: [{intencion}] {d.get('plan', '')} → {a}")
 
+            if solo_terminar and a.get("tipo") not in ("terminar", "fallar"):
+                historial.append("RECHAZADO: solo se acepta 'terminar' o 'fallar'")
+                aviso = ("NO hagas más clics: ese botón está desactivado y la lista TERMINÓ. Tu única acción posible ahora es "
+                         "'terminar' con la respuesta = suma de todas las filas anotadas en tus NOTAS (incluida la página actual), "
+                         "o 'fallar' si no tienes notas. Cualquier otra acción será rechazada.")
+                info("guard: forzando terminar")
+                continue
             ok, motivo = guard.revisar(intencion, a)
             if not ok:
                 seguidos += 1
@@ -142,6 +150,8 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 ult_clic = pt
                 if mismo_clic > 3:
                     seguidos += 1
+                    if guard.tipo == "pregunta":
+                        solo_terminar = True
                     historial.append(f"BLOQUEADO: ya hiciste clic {mismo_clic - 1} veces en {pt} sin que nada avanzara")
                     aviso = ("Ese mismo clic ya no sirve: llevas varios en el mismo punto y la pantalla no cambia. "
                              "Si era «Siguiente» (o un botón de paginación), lo más probable es que YA estés en la ÚLTIMA página "
