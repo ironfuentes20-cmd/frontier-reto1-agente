@@ -79,13 +79,10 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 h = hashlib.md5(png).hexdigest()
             if ultima_fue_accion and h == prev_hash:
                 iguales += 1
-                if iguales >= 2:
-                    aviso = ("La pantalla NO ha cambiado después de DOS acciones seguidas (ya esperé y volví a mirar). Ese botón no "
-                             "tiene más efecto: si era «Siguiente», la lista terminó y estás en la última página. No lo pulses más: "
-                             "suma lo que anotaste en tus NOTAS (incluidas las filas de esta última página) y responde con 'terminar'.")
-                else:
-                    aviso = ("La captura es idéntica a la anterior (ya esperé y volví a mirar). Comprueba el indicador «Página N» y "
-                             "reinténtalo UNA vez de otra forma; si sigue igual, probablemente no hay más resultados.")
+                aviso = ("La captura es idéntica a la anterior (la página pudo tardar en cargar o el clic no acertó). "
+                         "NO concluyas que la lista terminó por esto: solo es la última página si el botón «Siguiente» se ve GRIS/"
+                         "desactivado o el indicador muestra «Página N de N». Si «Siguiente» se ve activo, púlsalo de nuevo "
+                         "(con el cursor justo sobre el botón). Nunca vuelvas a páginas anteriores: ya las contaste en tus NOTAS.")
             else:
                 iguales = 0
             prev_hash = h
