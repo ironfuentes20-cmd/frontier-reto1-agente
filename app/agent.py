@@ -77,7 +77,8 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 await asyncio.sleep(1.5)
                 png = await rfb.screenshot()
                 h = hashlib.md5(png).hexdigest()
-            if ultima_fue_accion and h == prev_hash:
+            pantalla_igual = ultima_fue_accion and h == prev_hash
+            if pantalla_igual:
                 iguales += 1
                 aviso = ("La captura es idéntica a la anterior (la página pudo tardar en cargar o el clic no acertó). "
                          "NO concluyas que la lista terminó por esto: solo es la última página si el botón «Siguiente» se ve GRIS/"
@@ -132,7 +133,9 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                     pt = (int(float(a["x"])), int(float(a["y"])))
                 except (KeyError, TypeError, ValueError):
                     pt = None
-                if pt and ult_clic and abs(pt[0] - ult_clic[0]) <= 4 and abs(pt[1] - ult_clic[1]) <= 4:
+                # solo cuenta como repetido si la pantalla NO cambió tras el clic anterior
+                # (pulsar «Siguiente» 6 veces para recorrer 7 páginas es legítimo)
+                if pt and ult_clic and pantalla_igual and abs(pt[0] - ult_clic[0]) <= 4 and abs(pt[1] - ult_clic[1]) <= 4:
                     mismo_clic += 1
                 else:
                     mismo_clic = 1 if pt else 0
