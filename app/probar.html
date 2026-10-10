@@ -19,6 +19,8 @@ small{color:#888}
 <script>
 const $=i=>document.getElementById(i);
 $("go").onclick=async()=>{
+  const tk=$("tok").value.trim();
+  if(/[^\x20-\x7e]/.test(tk)){$("out").textContent="El token tiene caracteres raros (como •). Usa el botón COPIAR de la tarjeta, no copies a mano.";return}
   const H={"Authorization":"Bearer "+$("tok").value.trim(),"Content-Type":"application/json"};
   let u=$("url").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
   const body={tarea:$("tarea").value,escritorio:{url:"wss://"+u+"/websockify",password:$("pw").value.trim()}};

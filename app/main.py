@@ -35,7 +35,7 @@ class NuevaTarea(BaseModel):
 
 def autorizar(authorization: str | None = Header(default=None)):
     esperado = f"Bearer {TEAM_TOKEN}"
-    if not TEAM_TOKEN or not authorization or not hmac.compare_digest(authorization, esperado):
+    if not TEAM_TOKEN or not authorization or not hmac.compare_digest(authorization.encode("utf-8"), esperado.encode("utf-8")):
         raise HTTPException(status_code=401, detail="token inválido")
 
 
