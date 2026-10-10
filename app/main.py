@@ -3,7 +3,10 @@ import hmac
 import os
 import uuid
 
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from . import agent, reporter
@@ -34,6 +37,11 @@ def autorizar(authorization: str | None = Header(default=None)):
     esperado = f"Bearer {TEAM_TOKEN}"
     if not TEAM_TOKEN or not authorization or not hmac.compare_digest(authorization, esperado):
         raise HTTPException(status_code=401, detail="token inválido")
+
+
+@app.get("/probar", response_class=HTMLResponse)
+async def probar():
+    return (Path(__file__).parent / "probar.html").read_text(encoding="utf-8")
 
 
 @app.get("/health")

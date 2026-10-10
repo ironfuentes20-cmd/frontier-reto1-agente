@@ -1,0 +1,36 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Probar agente</title>
+<style>
+body{background:#000;color:#eee;font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:20px}
+h1{color:#c8f135;font-size:22px}label{display:block;margin-top:14px;color:#5cc8ff;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+input,textarea{width:100%;box-sizing:border-box;background:#111;color:#fff;border:1px solid #333;border-radius:6px;padding:10px;font:inherit}
+button{margin-top:18px;background:#c8f135;color:#000;border:0;border-radius:6px;padding:12px 22px;font-weight:700;font-size:16px;cursor:pointer}
+pre{background:#111;border:1px solid #333;border-radius:6px;padding:12px;white-space:pre-wrap;min-height:60px}
+small{color:#888}
+</style></head><body>
+<h1>Probar el agente</h1>
+<small>Los datos se quedan en tu navegador y solo viajan a este mismo servidor.</small>
+<label>Token del equipo</label><input id="tok" type="password" autocomplete="off">
+<label>Dirección del escritorio (https://…)</label><input id="url" placeholder="https://frontier-r1-…up.railway.app">
+<label>Contraseña del escritorio</label><input id="pw" type="password" autocomplete="off">
+<label>Tarea</label><textarea id="tarea" rows="3">¿Cuántos clientes hay registrados?</textarea>
+<button id="go">Lanzar tarea</button>
+<label>Resultado</label><pre id="out">—</pre>
+<script>
+const $=i=>document.getElementById(i);
+$("go").onclick=async()=>{
+  const H={"Authorization":"Bearer "+$("tok").value.trim(),"Content-Type":"application/json"};
+  let u=$("url").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
+  const body={tarea:$("tarea").value,escritorio:{url:"wss://"+u+"/websockify",password:$("pw").value.trim()}};
+  $("out").textContent="Enviando…";
+  const r=await fetch("/tasks",{method:"POST",headers:H,body:JSON.stringify(body)});
+  if(!r.ok){$("out").textContent="Error "+r.status+" (¿token correcto?)";return}
+  const id=(await r.json()).task_id,t0=Date.now();
+  const tick=async()=>{
+    const g=await (await fetch("/tasks/"+id,{headers:H})).json();
+    const s=Math.round((Date.now()-t0)/1000);
+    if(g.estado==="en_curso"){$("out").textContent="Trabajando… "+s+" s";setTimeout(tick,2000)}
+    else $("out").textContent=g.estado.toUpperCase()+" ("+s+" s)\n\n"+g.resumen;
+  };tick();
+};
+</script></body></html>
