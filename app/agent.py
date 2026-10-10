@@ -79,7 +79,7 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 png = await rfb.screenshot()
                 h = hashlib.md5(png).hexdigest()
             pantalla_igual = ultima_fue_accion and h == prev_hash
-            if pantalla_igual:
+            if pantalla_igual and not aviso and not solo_terminar:
                 iguales += 1
                 aviso = ("La captura es idéntica a la anterior (la página pudo tardar en cargar o el clic no acertó). "
                          "NO concluyas que la lista terminó por esto: solo es la última página si el botón «Siguiente» se ve GRIS/"
@@ -89,6 +89,10 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
             else:
                 iguales = 0
             prev_hash = h
+            if solo_terminar:
+                aviso = ("NO hagas más clics: el botón está desactivado y la lista TERMINÓ. Tu única acción posible es "
+                         "{\"tipo\":\"terminar\"} con \"respuesta\" = suma de todas las filas anotadas en tus NOTAS "
+                         "(incluida la página actual), o 'fallar' si no tienes notas. Cualquier otra acción será rechazada.")
             d = await modelo.decidir(SYSTEM, mensaje_usuario(tarea, historial, aviso, notas), png)
             aviso = ""
             if d.get("notas"):
