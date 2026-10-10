@@ -72,6 +72,11 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
             png = await rfb.screenshot()
             h = hashlib.md5(png).hexdigest()
             if ultima_fue_accion and h == prev_hash:
+                # puede ser una pantalla lenta en repintar: mirar otra vez antes de molestar al modelo
+                await asyncio.sleep(1.5)
+                png = await rfb.screenshot()
+                h = hashlib.md5(png).hexdigest()
+            if ultima_fue_accion and h == prev_hash:
                 aviso = ("La captura es idéntica a la anterior. Puede que tu última acción no hiciera efecto o que la pantalla "
                          "aún no haya repintado. No saques conclusiones todavía: comprueba el indicador de la pantalla (por ejemplo "
                          "«Página N») y si el botón que pulsaste sigue activo, reinténtalo UNA vez de otra forma. Solo asume que "
