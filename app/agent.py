@@ -105,7 +105,6 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                         "la tarea exigía acciones que el agente no puede hacer de forma segura", [motivo],
                         secretos, cambios=guard.guardados > 0 or guard.exportados > 0)
                 continue
-            seguidos = 0
             ultima_fue_accion = a.get("tipo") not in ("terminar", "fallar")
 
             t = a.get("tipo")
@@ -140,9 +139,12 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                 if mismo_clic > 3:
                     seguidos += 1
                     historial.append(f"BLOQUEADO: ya hiciste clic {mismo_clic - 1} veces en {pt} sin que nada avanzara")
-                    aviso = ("Ese mismo clic ya no sirve: llevas varios en el mismo punto. Si es un desplegable, enfócalo con un "
-                             "clic y elige la opción con el teclado (escribe su primera letra o usa la flecha Abajo y Enter). "
-                             "Si es un botón que no responde, busca otra ruta; si no la hay, usa 'fallar' explicando qué no respondió.")
+                    aviso = ("Ese mismo clic ya no sirve: llevas varios en el mismo punto y la pantalla no cambia. "
+                             "Si era «Siguiente» (o un botón de paginación), lo más probable es que YA estés en la ÚLTIMA página "
+                             "(el botón está desactivado). Mira el indicador de página: si el número actual coincide con el total, "
+                             "o no hay más páginas, suma lo anotado en tus NOTAS (incluida esta página) y responde con 'terminar'. "
+                             "Si era un desplegable, enfócalo con un clic y elige con el teclado (primera letra o flecha Abajo y Enter). "
+                             "Si no es nada de eso y el botón no responde, busca otra ruta o usa 'fallar' explicando qué no respondió.")
                     info(f"guard: clic repetido en {pt}")
                     if seguidos >= 4:
                         return "fallida", reporter.fallida(
@@ -151,6 +153,7 @@ async def ejecutar(tarea: str, url: str, password: str, modelo: Modelo, secretos
                     continue
             else:
                 ult_clic, mismo_clic = None, 0
+            seguidos = 0
             try:
                 desc = await _actuar(rfb, a)
             except (ValueError, KeyError, TypeError, RFBError) as e:
